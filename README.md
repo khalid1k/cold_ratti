@@ -27,6 +27,9 @@
 
 ## Project setup
 
+## Node version = v22.14.0  
+
+
 ```bash
 $ npm install
 ```

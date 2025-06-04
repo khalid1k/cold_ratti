@@ -6,7 +6,6 @@ import { AppService } from './app.service';
 import dataSource from './config/database.config';
 import { Logger } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
-import { FirebaseService } from './modules/firebase/firebase.service';
 import { UsersModule } from './modules/users/users.module';
 @Module({
   imports: [
@@ -23,7 +22,6 @@ import { UsersModule } from './modules/users/users.module';
           if (!dataSource.isInitialized) {
             await dataSource.initialize();
             logger.log('Database connection established');
-            console.log('Database connection established');
           }
           return dataSource;
         } catch (error) {
@@ -36,6 +34,6 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService, FirebaseService],
+  providers: [AppService],
 })
 export class AppModule {}

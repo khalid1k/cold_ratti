@@ -1,11 +1,6 @@
-import { IsOptional } from 'class-validator';
-export class createUserDto {
-  @IsOptional()
-  firebaseUid: string;
-  @IsOptional()
-  email: string;
-  @IsOptional()
+export class CreateUserDto {
+  auth0Id: string;
+  email?: string;
   name?: string;
-  @IsOptional()
-  photoUrl?: string;
+  picture?: string;
 }
