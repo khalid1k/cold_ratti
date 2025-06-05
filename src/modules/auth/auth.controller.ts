@@ -55,17 +55,17 @@ export class AuthController {
       type: 'object',
       properties: {
         email: { type: 'string', format: 'email', example: 'user@example.com' },
-        token: { type: 'string', example: '123456' },
+        otp: { type: 'string', example: '123456' },
       },
-      required: ['email', 'token'],
+      required: ['email', 'otp'],
     },
   })
   async verifyEmailOtp(
     @Body('email') email: string,
-    @Body('token') token: string,
+    @Body('otp') otp: string,
   ) {
     try {
-      return await this.authService.verifyEmailOtp(email, token);
+      return await this.authService.verifyEmailOtp(email, otp);
     } catch (error) {
       throw new HttpException(
         error.message || 'Invalid OTP',

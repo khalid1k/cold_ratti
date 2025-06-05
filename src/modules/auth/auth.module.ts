@@ -12,6 +12,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { FirebaseConfig } from 'src/config/firebase.config';
 import { SupabaseConfig } from 'src/config/supabase.config';
+import { SendGridConfig } from 'src/config/sendGrid.config';
+import { OtpService } from './otp.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
@@ -26,7 +28,7 @@ import { SupabaseConfig } from 'src/config/supabase.config';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, Auth0Config, Auth0Strategy, JwtStrategy, FirebaseConfig, SupabaseConfig],
+  providers: [AuthService, Auth0Config, Auth0Strategy, JwtStrategy, FirebaseConfig, SupabaseConfig, SendGridConfig, OtpService],
   controllers: [AuthController],
 })
 export class AuthModule {}
