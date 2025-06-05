@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/createUser.dto';
-import { UpdateUserDto } from './dto/updateUser.dto';
+
+type AuthProvider = 'supabase' | 'firebase';
+
 @Injectable()
 export class UserService {
   constructor(
@@ -11,50 +12,42 @@ export class UserService {
     private userRepository: Repository<User>,
   ) {}
 
-  async findOneByAuth0Id(auth0Id: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { auth0Id } });
-  }
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const user = this.userRepository.create(createUserDto);
-    return this.userRepository.save(user);
-  }
-
-  async update(user: User, updateUserDto: UpdateUserDto): Promise<User> {
-    Object.assign(user, updateUserDto);
-    return this.userRepository.save(user);
-  }
-
-  async createOrUpdateFromAuth0(auth0User: {
-    auth0Id: string;
+  async createOrUpdateUser(userData: {
+    authProvider: AuthProvider;
+    providerId: string;
     email?: string;
     name?: string;
     picture?: string;
   }): Promise<User> {
-    let user = await this.findOneByAuth0Id(auth0User.auth0Id);
+    // Try to find existing user
+    const user = await this.userRepository.findOne({
+      where: {
+        providerId: userData.providerId,
+        providerType: userData.authProvider
+      }
+    });
 
-    if (!user) {
-      const createUserDto: CreateUserDto = {
-        auth0Id: auth0User.auth0Id,
-        email: auth0User.email,
-        name: auth0User.name,
-        picture: auth0User.picture,
-      };
-      user = await this.create(createUserDto);
-    } else {
-      const updateUserDto: UpdateUserDto = {
-        email: auth0User.email,
-        name: auth0User.name,
-        picture: auth0User.picture,
-      };
-      user = await this.update(user, updateUserDto);
+    if (user) {
+      // Update existing user
+      if (userData.email) user.email = userData.email;
+      if (userData.name) user.name = userData.name;
+      if (userData.picture) user.picture = userData.picture;
+      return this.userRepository.save(user);
     }
 
-    return user;
+    // Create new user
+    const newUser = this.userRepository.create({
+      providerId: userData.providerId,
+      providerType: userData.authProvider,
+      email: userData.email,
+      name: userData.name,
+      picture: userData.picture
+    });
+
+    return this.userRepository.save(newUser);
   }
 
-  sanitizeUser(user: User): Partial<User> {
-    const { ...sanitized } = user;
-    return sanitized;
+  sanitizeUser(user: User): User {
+    return user;
   }
 }

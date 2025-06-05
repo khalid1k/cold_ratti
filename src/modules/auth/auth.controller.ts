@@ -1,76 +1,133 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Req,
-  UseGuards,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { PasswordlessStartDto, PasswordlessVerifyDto } from './dto/auth.dto';
-import { AuthCallbackResponseDto } from './dto/authCallbackResponse.dto';
-import { Auth0Guard } from './guards/auth0.guard';
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Post('passwordless/start')
-  @ApiOperation({ summary: 'passwordless login' })
-  @ApiBody({ type: PasswordlessStartDto })
-  async startPasswordless(@Body() body: PasswordlessStartDto) {
-    return this.authService.startPasswordless(body.email);
-  }
-
-  @Post('passwordless/verify')
-  @ApiOperation({ summary: 'Verify passwordless OTP' })
-  @ApiBody({ type: PasswordlessVerifyDto })
-  async verifyPasswordless(@Body() body: PasswordlessVerifyDto) {
-    return this.authService.verifyPasswordless(body.email, body.code);
-  }
-
-  @Post('passwordless/resend')
-  @ApiOperation({ summary: 'Resend passwordless OTP' })
-  @ApiBody({ type: PasswordlessStartDto })
-  async resendOtp(@Body() body: PasswordlessStartDto) {
-    return this.authService.resendPasswordlessOTP(body.email);
-  }
-
-
-  @Get('social-login')
-  @UseGuards(Auth0Guard)
-  @ApiOperation({
-    summary:
-      'Initiates social login via Auth0 (Google, Apple, Facebook, Twitter, Microsoft, GitHub)',
+  @Post('email-otp/start')
+  @ApiOperation({ summary: 'Start email OTP flow' })
+  @ApiResponse({ status: 200, description: 'OTP sent successfully' })
+  @ApiResponse({ status: 429, description: 'Too many OTP requests' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'user@example.com' },
+      },
+      required: ['email'],
+    },
   })
-  login() {}
-
-  @Get('callback')
-  @UseGuards(Auth0Guard)
-  @ApiOperation({ summary: 'Auth0 callback handler' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns tokens and user data',
-    type: AuthCallbackResponseDto,
-  })
-  async auth0Callback(@Req() req) {
+  async startEmailOtp(@Body('email') email: string) {
     try {
-      const result = await this.authService.handleAuth0Callback(req.user);
-      console.log("social loging result is ", result)
-      return {
-        success: true,
-        accessToken: result.accessToken,
-        user: result.user,
-      };
+      return await this.authService.startEmailOtp(email);
     } catch (error) {
       throw new HttpException(
-        { success: false, error: error.message },
-        HttpStatus.UNAUTHORIZED,
+        error.message || 'Failed to send OTP',
+        error.status || HttpStatus.BAD_REQUEST,
       );
     }
   }
 
+  @Post('email-otp/verify')
+  @ApiOperation({ summary: 'Verify email OTP' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'OTP verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string' },
+        user: { type: 'object' },
+      },
+    },
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'user@example.com' },
+        token: { type: 'string', example: '123456' },
+      },
+      required: ['email', 'token'],
+    },
+  })
+  async verifyEmailOtp(
+    @Body('email') email: string,
+    @Body('token') token: string,
+  ) {
+    try {
+      return await this.authService.verifyEmailOtp(email, token);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Invalid OTP',
+        error.status || HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('email-otp/resend')
+  @ApiOperation({ summary: 'Resend email OTP' })
+  @ApiResponse({ status: 200, description: 'OTP resent successfully' })
+  @ApiResponse({ status: 429, description: 'Please wait before requesting a new OTP' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email', example: 'user@example.com' },
+      },
+      required: ['email'],
+    },
+  })
+  async resendEmailOtp(@Body('email') email: string) {
+    try {
+      return await this.authService.resendEmailOtp(email);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to resend OTP',
+        error.status || HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('social/login')
+  @ApiOperation({ summary: 'Social login with Firebase' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Social login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string' },
+        user: { type: 'object' },
+      },
+    },
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        idToken: { type: 'string', description: 'Firebase ID token' },
+      },
+      required: ['idToken'],
+    },
+  })
+  async socialLogin(@Body('idToken') idToken: string) {
+    try {
+      return await this.authService.handleSocialLogin(idToken);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Authentication failed',
+        error.status || HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
 }

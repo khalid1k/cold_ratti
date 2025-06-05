@@ -10,6 +10,8 @@ import { Auth0Config } from './auth0.config';
 import { User } from '../users/entities/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { FirebaseConfig } from 'src/config/firebase.config';
+import { SupabaseConfig } from 'src/config/supabase.config';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
@@ -24,7 +26,7 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, Auth0Config, Auth0Strategy, JwtStrategy],
+  providers: [AuthService, Auth0Config, Auth0Strategy, JwtStrategy, FirebaseConfig, SupabaseConfig],
   controllers: [AuthController],
 })
 export class AuthModule {}
