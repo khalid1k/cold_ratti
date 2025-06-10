@@ -1,22 +1,26 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseFilters } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { HttpExceptionFilter } from 'src/common/dto/filters/httException.filter';
+import { SuccessResponse } from 'src/common/dto/response.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@UseFilters(HttpExceptionFilter)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('email-otp/start')
   @ApiOperation({ summary: 'Start email OTP flow' })
-  @ApiResponse({ status: 200, description: 'OTP sent successfully' })
-  @ApiResponse({ status: 429, description: 'Too many OTP requests' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'OTP sent successfully',
+    type: SuccessResponse,
+  })
+  @ApiResponse({ 
+    status: 429, 
+    description: 'Too many OTP requests',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -27,14 +31,7 @@ export class AuthController {
     },
   })
   async startEmailOtp(@Body('email') email: string) {
-    try {
-      return await this.authService.startEmailOtp(email);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to send OTP',
-        error.status || HttpStatus.BAD_REQUEST,
-      );
-    }
+    return this.authService.startEmailOtp(email);
   }
 
   @Post('email-otp/verify')
@@ -42,13 +39,7 @@ export class AuthController {
   @ApiResponse({ 
     status: 200, 
     description: 'OTP verified successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        accessToken: { type: 'string' },
-        user: { type: 'object' },
-      },
-    },
+    type: SuccessResponse,
   })
   @ApiBody({
     schema: {
@@ -64,20 +55,20 @@ export class AuthController {
     @Body('email') email: string,
     @Body('otp') otp: string,
   ) {
-    try {
-      return await this.authService.verifyEmailOtp(email, otp);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Invalid OTP',
-        error.status || HttpStatus.BAD_REQUEST,
-      );
-    }
+    return this.authService.verifyEmailOtp(email, otp);
   }
 
   @Post('email-otp/resend')
   @ApiOperation({ summary: 'Resend email OTP' })
-  @ApiResponse({ status: 200, description: 'OTP resent successfully' })
-  @ApiResponse({ status: 429, description: 'Please wait before requesting a new OTP' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'OTP resent successfully',
+    type: SuccessResponse,
+  })
+  @ApiResponse({ 
+    status: 429, 
+    description: 'Please wait before requesting a new OTP',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -88,14 +79,7 @@ export class AuthController {
     },
   })
   async resendEmailOtp(@Body('email') email: string) {
-    try {
-      return await this.authService.resendEmailOtp(email);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Failed to resend OTP',
-        error.status || HttpStatus.BAD_REQUEST,
-      );
-    }
+    return this.authService.resendEmailOtp(email);
   }
 
   @Post('social/login')
@@ -103,31 +87,21 @@ export class AuthController {
   @ApiResponse({ 
     status: 200, 
     description: 'Social login successful',
-    schema: {
-      type: 'object',
-      properties: {
-        accessToken: { type: 'string' },
-        user: { type: 'object' },
-      },
-    },
+    type: SuccessResponse,
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        idToken: { type: 'string', description: 'Firebase ID token' },
+        idToken: { 
+          type: 'string', 
+          description: 'Firebase ID token from social provider' 
+        },
       },
       required: ['idToken'],
     },
   })
   async socialLogin(@Body('idToken') idToken: string) {
-    try {
-      return await this.authService.handleSocialLogin(idToken);
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Authentication failed',
-        error.status || HttpStatus.UNAUTHORIZED,
-      );
-    }
+    return this.authService.handleSocialLogin(idToken);
   }
 }
