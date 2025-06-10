@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseFilters } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { HttpExceptionFilter } from 'src/common/dto/filters/httException.filter';
+import { HttpExceptionFilter } from 'src/common/filters/httException.filter';
 import { SuccessResponse } from 'src/common/dto/response.dto';
 
 @ApiTags('Authentication')
